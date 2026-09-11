@@ -1,0 +1,22 @@
+# Compilados Java
+*.class
+/bin/
+/out/
+/build/
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Config sensível de conexão
+db.properties
+*.env
+
+# Sistema
+.DS_Store
+Thumbs.db
