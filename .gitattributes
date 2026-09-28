@@ -1,0 +1,8 @@
+# Fim de linha dos scripts do Maven Wrapper, independente do sistema operacional
+mvnw        text eol=lf
+*.cmd       text eol=crlf
+
+# Arquivos binarios (nunca converter)
+*.pdf       binary
+*.png       binary
+*.jar       binary
