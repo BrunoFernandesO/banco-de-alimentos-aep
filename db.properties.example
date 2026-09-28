@@ -1,0 +1,15 @@
+# Configuracao de conexao com o MySQL - MODELO
+#
+# 1. Copie este arquivo para "db.properties", na mesma pasta (raiz do projeto).
+# 2. Em db.properties, informe o usuario e a senha do seu MySQL local.
+#
+# O arquivo db.properties NAO e enviado ao GitHub (.gitignore), pois contem a senha.
+#
+# Observacoes:
+# - Se a senha contiver o caractere \ (barra invertida), escreva-o como \\
+# - Se o MySQL recusar a conexao com "Public Key Retrieval is not allowed",
+#   acrescente ?allowPublicKeyRetrieval=true ao final de db.url.
+
+db.url=jdbc:mysql://localhost:3306/banco_alimentos
+db.usuario=root
+db.senha=
