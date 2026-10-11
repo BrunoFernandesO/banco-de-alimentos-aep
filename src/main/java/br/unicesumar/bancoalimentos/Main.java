@@ -3,6 +3,9 @@ package br.unicesumar.bancoalimentos;
 import br.unicesumar.bancoalimentos.dao.PersistenciaException;
 import br.unicesumar.bancoalimentos.dao.conexao.ConexaoBanco;
 import br.unicesumar.bancoalimentos.dao.conexao.VerificadorEsquema;
+import br.unicesumar.bancoalimentos.view.Entrada;
+import br.unicesumar.bancoalimentos.view.EntradaEncerradaException;
+import br.unicesumar.bancoalimentos.view.MenuPrincipal;
 
 import java.sql.Connection;
 import java.util.List;
@@ -10,9 +13,8 @@ import java.util.List;
 /**
  * Ponto de entrada do Sistema de Gestão de Banco de Alimentos.
  *
- * <p>Sprint 1: conecta ao MySQL e confere a estrutura do banco. Nas próximas
- * sprints, a inicialização exibirá os alertas de vencimento (RF06) e abrirá o
- * menu principal da camada {@code view}.</p>
+ * <p>Conecta ao MySQL, confere a estrutura do banco e abre o menu principal da
+ * camada {@code view}. Ao sair (opção 0 ou fim da entrada), a conexão é encerrada.</p>
  */
 public final class Main {
 
@@ -25,8 +27,12 @@ public final class Main {
         try {
             banco = ConexaoBanco.getInstancia();
             if (bancoPronto(banco.getConexao())) {
-                System.out.println("Base pronta. O menu principal sera disponibilizado nas proximas sprints.");
+                new MenuPrincipal(new Entrada(System.in)).executar();
+                System.out.println("Sistema encerrado.");
             }
+        } catch (EntradaEncerradaException e) {
+            System.out.println();
+            System.out.println("Entrada encerrada. Sistema finalizado.");
         } catch (PersistenciaException e) {
             System.err.println("ERRO: " + e.getMessage());
         } finally {
