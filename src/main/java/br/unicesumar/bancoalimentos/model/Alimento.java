@@ -1,6 +1,7 @@
 package br.unicesumar.bancoalimentos.model;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 /**
@@ -10,6 +11,12 @@ import java.util.Optional;
  * <p>Classe abstrata: todo alimento é, concretamente, um {@link AlimentoPerecivel} ou um
  * {@link AlimentoNaoPerecivel}. Aqui ficam o estado e as regras comuns aos dois tipos
  * (nome, saldo em estoque, data de recebimento, doador de origem e a baixa de estoque).</p>
+ *
+ * <p><b>Polimorfismo (RF03):</b> {@link #calcularPrioridade()} é abstrato e cada subclasse o
+ * sobrescreve com a sua própria regra. O estoque é ordenado chamando esse único método,
+ * sem nenhum teste do tipo concreto. As escalas foram escolhidas para não se sobreporem:
+ * perecíveis ficam no intervalo (50, 100] e não perecíveis em [10, 40], de modo que um
+ * perecível sempre sai antes de um não perecível.</p>
  *
  * <p>Regras garantidas pelo encapsulamento: nome obrigatório; quantidade nunca negativa,
  * arredondada a duas casas (coluna {@code DECIMAL(10,2)}); data de recebimento
@@ -45,6 +52,28 @@ public abstract class Alimento {
         setNome(nome);
         setQuantidade(quantidade);
         setDataRecebimento(dataRecebimento);
+    }
+
+    /**
+     * Prioridade de distribuição deste item: quanto maior, mais cedo ele deve sair do
+     * estoque. Cada tipo de alimento define a sua regra (polimorfismo).
+     *
+     * @return valor positivo; perecíveis no intervalo (50, 100], não perecíveis em [10, 40]
+     */
+    public abstract double calcularPrioridade();
+
+    /**
+     * Indica se o item já passou da validade e, portanto, não pode mais ser distribuído.
+     * A implementação comum retorna {@code false} (itens sem validade nunca vencem);
+     * {@link AlimentoPerecivel} a sobrescreve.
+     */
+    public boolean estaVencido() {
+        return false;
+    }
+
+    /** Dias decorridos desde o recebimento até hoje (zero no dia da entrada). */
+    public long diasEmEstoque() {
+        return Math.max(0, ChronoUnit.DAYS.between(dataRecebimento, LocalDate.now()));
     }
 
     /** Tipo concreto, usado pelo DAO para gravar a coluna discriminadora {@code tipo}. */
