@@ -45,6 +45,7 @@ public class AlimentoDAO {
     private static final String SQL_LISTAR = SQL_SELECIONAR + " ORDER BY a.id";
     private static final String SQL_BUSCAR_POR_ID = SQL_SELECIONAR + " WHERE a.id = ?";
     private static final String SQL_LISTAR_POR_DOADOR = SQL_SELECIONAR + " WHERE a.doador_id = ? ORDER BY a.data_recebimento, a.id";
+    private static final String SQL_LISTAR_COM_SALDO = SQL_SELECIONAR + " WHERE a.quantidade > 0 ORDER BY a.id";
 
     /** Grava um novo alimento e atribui a ele o id gerado pelo banco. */
     public void inserir(Alimento alimento) {
@@ -101,6 +102,20 @@ public class AlimentoDAO {
             return executarConsulta(comando, doador);
         } catch (SQLException e) {
             throw new PersistenciaException("Nao foi possivel listar os alimentos do doador " + doador.getId() + ".", e);
+        }
+    }
+
+    /**
+     * Alimentos com saldo em estoque (quantidade maior que zero), vencidos ou não. A
+     * ordenação por prioridade é feita no domínio, por meio do método polimórfico
+     * {@link Alimento#calcularPrioridade()}.
+     */
+    public List<Alimento> listarComSaldo() {
+        Connection conexao = ConexaoBanco.getInstancia().getConexao();
+        try (PreparedStatement comando = conexao.prepareStatement(SQL_LISTAR_COM_SALDO)) {
+            return executarConsulta(comando, null);
+        } catch (SQLException e) {
+            throw new PersistenciaException("Nao foi possivel consultar o estoque.", e);
         }
     }
 
