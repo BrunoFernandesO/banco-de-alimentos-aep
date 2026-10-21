@@ -62,6 +62,35 @@ public class AlimentoService {
         return alimentoDAO.listar();
     }
 
+    /**
+     * Grava as alterações feitas em um alimento já cadastrado (nome, saldo e datas). As
+     * regras de cada tipo já foram validadas pelos métodos de alteração do domínio; o tipo
+     * e o doador não mudam.
+     */
+    public void atualizar(Alimento alimento) {
+        if (alimento.getId() <= 0) {
+            throw new RegraNegocioException("Somente alimentos ja cadastrados podem ser alterados.");
+        }
+        alimentoDAO.atualizar(alimento);
+    }
+
+    /**
+     * Exclui um alimento que nunca foi distribuído. Itens com distribuições não podem ser
+     * excluídos, para preservar a rastreabilidade das entregas.
+     *
+     * @throws RegraNegocioException se o alimento não existir ou já tiver distribuições
+     */
+    public void excluir(int id) {
+        Alimento alimento = buscarPorId(id);
+        int distribuicoes = alimentoDAO.contarDistribuicoes(id);
+        if (distribuicoes > 0) {
+            throw new RegraNegocioException("O alimento '" + alimento.getNome() + "' possui " + distribuicoes
+                    + " distribuicao(oes) registrada(s) e nao pode ser excluido, para preservar o historico. "
+                    + "Para retira-lo do estoque, altere o saldo para zero.");
+        }
+        alimentoDAO.excluir(id);
+    }
+
     /** @throws RegraNegocioException se não houver alimento com o id informado */
     public Alimento buscarPorId(int id) {
         return alimentoDAO.buscarPorId(id)

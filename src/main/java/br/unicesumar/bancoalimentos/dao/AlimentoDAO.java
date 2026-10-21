@@ -32,6 +32,9 @@ import java.util.Optional;
  */
 public class AlimentoDAO {
 
+    /** Código de erro do MySQL: exclusão bloqueada por chave estrangeira (linha referenciada). */
+    private static final int ERRO_LINHA_REFERENCIADA = 1451;
+
     private static final String SQL_INSERIR =
             "INSERT INTO alimentos (nome, tipo, quantidade, data_recebimento, data_validade, doador_id) "
             + "VALUES (?, ?, ?, ?, ?, ?)";
@@ -46,6 +49,13 @@ public class AlimentoDAO {
     private static final String SQL_BUSCAR_POR_ID = SQL_SELECIONAR + " WHERE a.id = ?";
     private static final String SQL_LISTAR_POR_DOADOR = SQL_SELECIONAR + " WHERE a.doador_id = ? ORDER BY a.data_recebimento, a.id";
     private static final String SQL_LISTAR_COM_SALDO = SQL_SELECIONAR + " WHERE a.quantidade > 0 ORDER BY a.id";
+
+    /** O tipo e o doador não são alteráveis: definem a natureza e a origem da doação. */
+    private static final String SQL_ATUALIZAR =
+            "UPDATE alimentos SET nome = ?, quantidade = ?, data_recebimento = ?, data_validade = ? WHERE id = ?";
+    private static final String SQL_EXCLUIR = "DELETE FROM alimentos WHERE id = ?";
+    private static final String SQL_CONTAR_DISTRIBUICOES =
+            "SELECT COUNT(*) FROM distribuicoes WHERE alimento_id = ?";
 
     /** Grava um novo alimento e atribui a ele o id gerado pelo banco. */
     public void inserir(Alimento alimento) {
@@ -102,6 +112,62 @@ public class AlimentoDAO {
             return executarConsulta(comando, doador);
         } catch (SQLException e) {
             throw new PersistenciaException("Nao foi possivel listar os alimentos do doador " + doador.getId() + ".", e);
+        }
+    }
+
+    /**
+     * Grava as alterações de nome, quantidade e datas de um alimento existente.
+     *
+     * @throws PersistenciaException se o alimento não existir mais no banco
+     */
+    public void atualizar(Alimento alimento) {
+        Connection conexao = ConexaoBanco.getInstancia().getConexao();
+        try (PreparedStatement comando = conexao.prepareStatement(SQL_ATUALIZAR)) {
+            comando.setString(1, alimento.getNome());
+            comando.setDouble(2, alimento.getQuantidade());
+            comando.setObject(3, alimento.getDataRecebimento());
+            definirValidade(comando, 4, alimento);
+            comando.setInt(5, alimento.getId());
+            if (comando.executeUpdate() == 0) {
+                throw new PersistenciaException("Alimento " + alimento.getId() + " nao encontrado para atualizacao.");
+            }
+        } catch (SQLException e) {
+            throw new PersistenciaException("Nao foi possivel atualizar o alimento " + alimento.getId() + ".", e);
+        }
+    }
+
+    /**
+     * Exclui o alimento. A chave estrangeira de {@code distribuicoes} (sem {@code ON DELETE
+     * CASCADE}) impede a exclusão de itens já distribuídos; a camada de serviço verifica
+     * isso antes, e este tratamento é a última barreira.
+     *
+     * @return {@code true} se havia um alimento com o id informado
+     */
+    public boolean excluir(int id) {
+        Connection conexao = ConexaoBanco.getInstancia().getConexao();
+        try (PreparedStatement comando = conexao.prepareStatement(SQL_EXCLUIR)) {
+            comando.setInt(1, id);
+            return comando.executeUpdate() > 0;
+        } catch (SQLException e) {
+            if (e.getErrorCode() == ERRO_LINHA_REFERENCIADA) {
+                throw new PersistenciaException("O alimento " + id
+                        + " possui distribuicoes registradas e nao pode ser excluido.", e);
+            }
+            throw new PersistenciaException("Nao foi possivel excluir o alimento " + id + ".", e);
+        }
+    }
+
+    /** Quantidade de distribuições registradas para o alimento. */
+    public int contarDistribuicoes(int alimentoId) {
+        Connection conexao = ConexaoBanco.getInstancia().getConexao();
+        try (PreparedStatement comando = conexao.prepareStatement(SQL_CONTAR_DISTRIBUICOES)) {
+            comando.setInt(1, alimentoId);
+            try (ResultSet resultado = comando.executeQuery()) {
+                resultado.next();
+                return resultado.getInt(1);
+            }
+        } catch (SQLException e) {
+            throw new PersistenciaException("Nao foi possivel consultar as distribuicoes do alimento " + alimentoId + ".", e);
         }
     }
 
