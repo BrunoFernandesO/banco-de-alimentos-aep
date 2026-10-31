@@ -53,6 +53,7 @@ public class AlimentoDAO {
     /** O tipo e o doador não são alteráveis: definem a natureza e a origem da doação. */
     private static final String SQL_ATUALIZAR =
             "UPDATE alimentos SET nome = ?, quantidade = ?, data_recebimento = ?, data_validade = ? WHERE id = ?";
+    private static final String SQL_ATUALIZAR_QUANTIDADE = "UPDATE alimentos SET quantidade = ? WHERE id = ?";
     private static final String SQL_EXCLUIR = "DELETE FROM alimentos WHERE id = ?";
     private static final String SQL_CONTAR_DISTRIBUICOES =
             "SELECT COUNT(*) FROM distribuicoes WHERE alimento_id = ?";
@@ -133,6 +134,23 @@ public class AlimentoDAO {
             }
         } catch (SQLException e) {
             throw new PersistenciaException("Nao foi possivel atualizar o alimento " + alimento.getId() + ".", e);
+        }
+    }
+
+    /**
+     * Grava somente o saldo em estoque (baixa por distribuição, RF05). Executado dentro da
+     * transação aberta pela camada de serviço, sobre a conexão compartilhada.
+     */
+    public void atualizarQuantidade(Alimento alimento) {
+        Connection conexao = ConexaoBanco.getInstancia().getConexao();
+        try (PreparedStatement comando = conexao.prepareStatement(SQL_ATUALIZAR_QUANTIDADE)) {
+            comando.setDouble(1, alimento.getQuantidade());
+            comando.setInt(2, alimento.getId());
+            if (comando.executeUpdate() == 0) {
+                throw new PersistenciaException("Alimento " + alimento.getId() + " nao encontrado para baixa de estoque.");
+            }
+        } catch (SQLException e) {
+            throw new PersistenciaException("Nao foi possivel atualizar o saldo do alimento " + alimento.getId() + ".", e);
         }
     }
 
