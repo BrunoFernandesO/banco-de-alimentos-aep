@@ -20,3 +20,6 @@ db.properties
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Material local de recuperacao (nao versionar)
+recuperacao/

@@ -80,6 +80,12 @@ Pontos em que a implementação detalha ou ajusta o planejado na 1ª entrega, ca
 | Exclusão de alimento | Recusada se o alimento possui distribuições. | Preserva a rastreabilidade das entregas; as chaves estrangeiras não usam `ON DELETE CASCADE` (ver `schema.sql`). |
 | Distribuição | Registrada com a data do dia, escolhendo o alimento na lista por prioridade (RF03); não pode ser alterada depois. | É um registro histórico; vencidos e quantidades acima do saldo são recusados. |
 
+## Incidente e recuperação (09/11/2026)
+
+Em 09/11/2026, o notebook que continha o repositório local da equipe foi furtado. O trabalho das Sprints 2, 3 e 4, que ainda não havia sido enviado ao GitHub, foi perdido; a Sprint 1 já estava publicada e foi preservada.
+
+As Sprints 2 a 4 foram reconstruídas a partir de 09/11/2026, com base no documento da 1ª entrega (requisitos, diagramas e backlog), mantendo a divisão de responsabilidades do cronograma. Para manter a correspondência com o cronograma, os commits dessa reconstrução foram datados dentro do período original de cada sprint (Sprints 2 a 4); os commits da Sprint 5 trazem as datas reais.
+
 ## Tecnologias
 
 - **Java (JDK 17 LTS)** — tipagem forte e pilares de POO.
