@@ -64,6 +64,22 @@ A conexão com o MySQL é única e compartilhada (padrão **Singleton**, `Conexa
 
 Diagramas em [`/docs`](docs): `diagrama_classes.png` (UML) e `diagrama_der.png` (DER). Documento completo da 1ª entrega: [`docs/AEP_B1_Banco_de_Alimentos.pdf`](docs/AEP_B1_Banco_de_Alimentos.pdf).
 
+## Decisões de Implementação e Aderência ao Planejamento
+
+Pontos em que a implementação detalha ou ajusta o planejado na 1ª entrega, cada um com a sua justificativa:
+
+| Tema | Decisão | Justificativa |
+|---|---|---|
+| `Doador.cadastrar()`, `Beneficiario.cadastrar()` e `Distribuicao.registrar()` (diagrama de classes) | Implementados na camada de serviço: `DoadorService.cadastrar`, `BeneficiarioService.cadastrar` e `DistribuicaoService.registrar`, que usam os DAOs. | A arquitetura documentada na 1ª entrega (seção 3) isola todo o SQL no DAO e deixa o domínio sem JDBC. O diagrama mostra as operações no nível conceitual; colocá-las nas entidades (Active Record) misturaria SQL ao modelo. Além disso, `registrar` altera duas tabelas em uma transação, o que pertence ao serviço. |
+| Prioridade do não perecível | Cresce devagar com o tempo em estoque (`10 + 0,1 × dias`, teto 40), em vez de ser fixa. | Mantém o planejado ("mais baixa" que a de qualquer perecível, que fica entre 50 e 100) e acrescenta o critério FIFO para desempatar não perecíveis. |
+| Fórmula do perecível | `50 + 50 / (diasParaVencer + 1)`: 100 no dia do vencimento, 75 na véspera. | Cresce conforme a validade se aproxima (RF03) e nunca chega à faixa dos não perecíveis. Documentada em `AlimentoPerecivel.calcularPrioridade()`. |
+| Classes auxiliares fora do diagrama | `TipoAlimento` (discriminador da coluna `tipo`), `RegraNegocioException`, `Formatos`, `ItemDesperdicio` e `RelatorioDesperdicio` (RF07) e a hierarquia de menus `MenuConsole` (view). | Detalhes de implementação; entidades, atributos e relacionamentos do diagrama não mudaram. |
+| RF07 — o que é "não distribuído" | O relatório lista todo alimento vencido que ainda tinha saldo e indica à parte os que nunca tiveram distribuição. | O saldo que venceu é desperdício mesmo quando parte do item foi entregue; mostrar os dois casos mede a perda real (meta 12.3). |
+| RF06 — "poucos dias" | Perecíveis com saldo que vencem de hoje até 3 dias à frente (constante `RelatorioService.DIAS_ALERTA_VENCIMENTO`). | Valor único e fácil de ajustar. |
+| Alteração de alimento | Nome, saldo e datas podem ser alterados; tipo e doador não. | Tipo e doador definem a natureza e a origem da doação; um cadastro errado sem distribuições pode ser excluído e refeito. |
+| Exclusão de alimento | Recusada se o alimento possui distribuições. | Preserva a rastreabilidade das entregas; as chaves estrangeiras não usam `ON DELETE CASCADE` (ver `schema.sql`). |
+| Distribuição | Registrada com a data do dia, escolhendo o alimento na lista por prioridade (RF03); não pode ser alterada depois. | É um registro histórico; vencidos e quantidades acima do saldo são recusados. |
+
 ## Tecnologias
 
 - **Java (JDK 17 LTS)** — tipagem forte e pilares de POO.
