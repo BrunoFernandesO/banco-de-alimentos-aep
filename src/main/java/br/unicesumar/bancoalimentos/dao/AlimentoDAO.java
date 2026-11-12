@@ -5,6 +5,7 @@ import br.unicesumar.bancoalimentos.model.Alimento;
 import br.unicesumar.bancoalimentos.model.AlimentoNaoPerecivel;
 import br.unicesumar.bancoalimentos.model.AlimentoPerecivel;
 import br.unicesumar.bancoalimentos.model.Doador;
+import br.unicesumar.bancoalimentos.model.ItemDesperdicio;
 import br.unicesumar.bancoalimentos.model.RegraNegocioException;
 import br.unicesumar.bancoalimentos.model.TipoAlimento;
 import br.unicesumar.bancoalimentos.model.TipoDoador;
@@ -40,10 +41,11 @@ public class AlimentoDAO {
             + "VALUES (?, ?, ?, ?, ?, ?)";
 
     /** Colunas do alimento e do doador de origem (JOIN), lidas por {@link #mapear}. */
-    private static final String SQL_SELECIONAR =
-            "SELECT a.id, a.nome, a.tipo, a.quantidade, a.data_recebimento, a.data_validade, a.doador_id, "
-            + "d.nome AS doador_nome, d.tipo AS doador_tipo, d.contato AS doador_contato "
-            + "FROM alimentos a JOIN doadores d ON d.id = a.doador_id";
+    private static final String COLUNAS =
+            "a.id, a.nome, a.tipo, a.quantidade, a.data_recebimento, a.data_validade, a.doador_id, "
+            + "d.nome AS doador_nome, d.tipo AS doador_tipo, d.contato AS doador_contato";
+    private static final String ORIGEM = " FROM alimentos a JOIN doadores d ON d.id = a.doador_id";
+    private static final String SQL_SELECIONAR = "SELECT " + COLUNAS + ORIGEM;
 
     private static final String SQL_LISTAR = SQL_SELECIONAR + " ORDER BY a.id";
     private static final String SQL_BUSCAR_POR_ID = SQL_SELECIONAR + " WHERE a.id = ?";
@@ -51,6 +53,12 @@ public class AlimentoDAO {
     private static final String SQL_LISTAR_COM_SALDO = SQL_SELECIONAR + " WHERE a.quantidade > 0 ORDER BY a.id";
     private static final String SQL_LISTAR_COM_VALIDADE_ENTRE = SQL_SELECIONAR
             + " WHERE a.data_validade BETWEEN ? AND ? AND a.quantidade > 0 ORDER BY a.data_validade, a.id";
+
+    /** RF07: vencidos (validade anterior à data informada) com saldo, e o total já distribuído de cada um. */
+    private static final String SQL_LISTAR_DESPERDICIO = "SELECT " + COLUNAS
+            + ", COALESCE((SELECT SUM(di.quantidade) FROM distribuicoes di WHERE di.alimento_id = a.id), 0)"
+            + " AS quantidade_distribuida" + ORIGEM
+            + " WHERE a.data_validade < ? AND a.quantidade > 0 ORDER BY a.data_validade, a.id";
 
     /** O tipo e o doador não são alteráveis: definem a natureza e a origem da doação. */
     private static final String SQL_ATUALIZAR =
@@ -217,6 +225,27 @@ public class AlimentoDAO {
             return executarConsulta(comando, null);
         } catch (SQLException e) {
             throw new PersistenciaException("Nao foi possivel consultar os alimentos perto do vencimento.", e);
+        }
+    }
+
+    /**
+     * Itens do relatório de desperdício (RF07): alimentos vencidos antes de {@code hoje}
+     * que ainda têm saldo, com a soma das quantidades já distribuídas de cada um.
+     */
+    public List<ItemDesperdicio> listarDesperdicio(LocalDate hoje) {
+        Connection conexao = ConexaoBanco.getInstancia().getConexao();
+        try (PreparedStatement comando = conexao.prepareStatement(SQL_LISTAR_DESPERDICIO)) {
+            comando.setObject(1, hoje);
+            List<ItemDesperdicio> itens = new ArrayList<>();
+            Map<Integer, Doador> doadores = new HashMap<>();
+            try (ResultSet resultado = comando.executeQuery()) {
+                while (resultado.next()) {
+                    itens.add(new ItemDesperdicio(mapear(resultado, doadores), resultado.getDouble("quantidade_distribuida")));
+                }
+            }
+            return itens;
+        } catch (SQLException e) {
+            throw new PersistenciaException("Nao foi possivel gerar o relatorio de desperdicio.", e);
         }
     }
 

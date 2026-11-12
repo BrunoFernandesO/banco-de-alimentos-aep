@@ -2,11 +2,13 @@ package br.unicesumar.bancoalimentos.view;
 
 import br.unicesumar.bancoalimentos.model.Alimento;
 import br.unicesumar.bancoalimentos.model.Formatos;
+import br.unicesumar.bancoalimentos.model.ItemDesperdicio;
+import br.unicesumar.bancoalimentos.model.RelatorioDesperdicio;
 import br.unicesumar.bancoalimentos.service.RelatorioService;
 
 import java.util.List;
 
-/** Telas de acompanhamento: alertas de vencimento (RF06). */
+/** Telas de acompanhamento: alertas de vencimento (RF06) e relatório de desperdício (RF07). */
 public class MenuRelatorios extends MenuConsole {
 
     private final RelatorioService relatorioService;
@@ -23,15 +25,49 @@ public class MenuRelatorios extends MenuConsole {
 
     @Override
     protected List<String> getOpcoes() {
-        return List.of("Alertas de vencimento (RF06)");
+        return List.of(
+                "Alertas de vencimento (RF06)",
+                "Relatorio de desperdicio (RF07)");
     }
 
     @Override
     protected void executarOpcao(int opcao) {
         switch (opcao) {
             case 1 -> exibirAlertasVencimento(relatorioService);
+            case 2 -> exibirRelatorioDesperdicio();
             default -> throw new IllegalStateException("Opcao nao tratada: " + opcao);
         }
+    }
+
+    private void exibirRelatorioDesperdicio() {
+        RelatorioDesperdicio relatorio = relatorioService.gerarRelatorioDesperdicio();
+        System.out.println("RELATORIO DE DESPERDICIO - alimentos vencidos nao distribuidos ("
+                + Formatos.data(relatorio.dataReferencia()) + ")");
+        Tabela tabela = new Tabela()
+                .colunaNumerica("ID", 4)
+                .coluna("Alimento", 28)
+                .coluna("Venceu em", 10)
+                .colunaNumerica("Perdido", 9)
+                .colunaNumerica("Distribuido", 11)
+                .coluna("Situacao", 22)
+                .coluna("Doador", 22);
+        for (ItemDesperdicio item : relatorio.itens()) {
+            Alimento alimento = item.alimento();
+            tabela.adicionarLinha(alimento.getId(), alimento.getNome(),
+                    Formatos.data(alimento.consultarValidade().orElse(null)),
+                    Formatos.quantidade(item.quantidadePerdida()), Formatos.quantidade(item.quantidadeDistribuida()),
+                    item.nuncaDistribuido() ? "nunca distribuido" : "distribuido em parte",
+                    alimento.getDoador().getNome());
+        }
+        tabela.imprimir();
+        System.out.println();
+        System.out.println("Itens vencidos com saldo ......: " + relatorio.itens().size());
+        System.out.println("Itens nunca distribuidos ......: " + relatorio.contarNuncaDistribuidos());
+        System.out.println("Quantidade total perdida ......: " + Formatos.quantidade(relatorio.quantidadeTotalPerdida())
+                + " (soma das quantidades; unidade conforme cada item)");
+        System.out.println("Distribuido antes de vencer ...: " + Formatos.quantidade(relatorio.quantidadeTotalDistribuida()));
+        System.out.println("Aproveitamento desses itens ...: "
+                + String.format(Formatos.LOCALE_BRASIL, "%.1f%%", relatorio.percentualAproveitado()));
     }
 
     /** Alerta do RF06; exibido também automaticamente ao iniciar o sistema. */

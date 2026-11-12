@@ -2,11 +2,12 @@ package br.unicesumar.bancoalimentos.service;
 
 import br.unicesumar.bancoalimentos.dao.AlimentoDAO;
 import br.unicesumar.bancoalimentos.model.Alimento;
+import br.unicesumar.bancoalimentos.model.RelatorioDesperdicio;
 
 import java.time.LocalDate;
 import java.util.List;
 
-/** Consultas gerenciais sobre o estoque: alertas de vencimento (RF06). */
+/** Consultas gerenciais sobre o estoque: alertas de vencimento (RF06) e desperdício (RF07). */
 public class RelatorioService {
 
     /**
@@ -33,5 +34,14 @@ public class RelatorioService {
     public List<Alimento> listarAlertasVencimento() {
         LocalDate hoje = LocalDate.now();
         return alimentoDAO.listarComValidadeEntre(hoje, hoje.plusDays(DIAS_ALERTA_VENCIMENTO));
+    }
+
+    /**
+     * Relatório de desperdício (RF07): alimentos vencidos que ainda tinham saldo, ou seja,
+     * que não foram distribuídos (no todo ou em parte) antes da validade.
+     */
+    public RelatorioDesperdicio gerarRelatorioDesperdicio() {
+        LocalDate hoje = LocalDate.now();
+        return new RelatorioDesperdicio(hoje, alimentoDAO.listarDesperdicio(hoje));
     }
 }
