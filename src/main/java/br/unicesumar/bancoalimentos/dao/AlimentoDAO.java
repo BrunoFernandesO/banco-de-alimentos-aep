@@ -49,6 +49,8 @@ public class AlimentoDAO {
     private static final String SQL_BUSCAR_POR_ID = SQL_SELECIONAR + " WHERE a.id = ?";
     private static final String SQL_LISTAR_POR_DOADOR = SQL_SELECIONAR + " WHERE a.doador_id = ? ORDER BY a.data_recebimento, a.id";
     private static final String SQL_LISTAR_COM_SALDO = SQL_SELECIONAR + " WHERE a.quantidade > 0 ORDER BY a.id";
+    private static final String SQL_LISTAR_COM_VALIDADE_ENTRE = SQL_SELECIONAR
+            + " WHERE a.data_validade BETWEEN ? AND ? AND a.quantidade > 0 ORDER BY a.data_validade, a.id";
 
     /** O tipo e o doador não são alteráveis: definem a natureza e a origem da doação. */
     private static final String SQL_ATUALIZAR =
@@ -200,6 +202,21 @@ public class AlimentoDAO {
             return executarConsulta(comando, null);
         } catch (SQLException e) {
             throw new PersistenciaException("Nao foi possivel consultar o estoque.", e);
+        }
+    }
+
+    /**
+     * Alimentos com saldo cuja validade está entre as datas informadas, inclusive (RF06).
+     * Itens sem validade ({@code data_validade} nula) nunca são retornados.
+     */
+    public List<Alimento> listarComValidadeEntre(LocalDate inicio, LocalDate fim) {
+        Connection conexao = ConexaoBanco.getInstancia().getConexao();
+        try (PreparedStatement comando = conexao.prepareStatement(SQL_LISTAR_COM_VALIDADE_ENTRE)) {
+            comando.setObject(1, inicio);
+            comando.setObject(2, fim);
+            return executarConsulta(comando, null);
+        } catch (SQLException e) {
+            throw new PersistenciaException("Nao foi possivel consultar os alimentos perto do vencimento.", e);
         }
     }
 

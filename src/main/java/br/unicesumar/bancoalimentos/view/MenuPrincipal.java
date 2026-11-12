@@ -4,6 +4,7 @@ import br.unicesumar.bancoalimentos.service.AlimentoService;
 import br.unicesumar.bancoalimentos.service.BeneficiarioService;
 import br.unicesumar.bancoalimentos.service.DistribuicaoService;
 import br.unicesumar.bancoalimentos.service.DoadorService;
+import br.unicesumar.bancoalimentos.service.RelatorioService;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ public class MenuPrincipal extends MenuConsole {
     private final MenuAlimentos menuAlimentos;
     private final MenuBeneficiarios menuBeneficiarios;
     private final MenuDistribuicoes menuDistribuicoes;
+    private final MenuRelatorios menuRelatorios;
 
     public MenuPrincipal(Entrada entrada) {
         super(entrada);
@@ -25,6 +27,7 @@ public class MenuPrincipal extends MenuConsole {
         this.menuAlimentos = new MenuAlimentos(entrada, alimentoService, doadorService);
         this.menuBeneficiarios = new MenuBeneficiarios(entrada, beneficiarioService);
         this.menuDistribuicoes = new MenuDistribuicoes(entrada, distribuicaoService, alimentoService, beneficiarioService);
+        this.menuRelatorios = new MenuRelatorios(entrada, new RelatorioService());
     }
 
     @Override
@@ -38,7 +41,8 @@ public class MenuPrincipal extends MenuConsole {
                 "Doadores",
                 "Alimentos e estoque",
                 "Beneficiarios",
-                "Distribuicoes");
+                "Distribuicoes",
+                "Alertas e relatorios");
     }
 
     @Override
@@ -53,6 +57,7 @@ public class MenuPrincipal extends MenuConsole {
             case 2 -> menuAlimentos.executar();
             case 3 -> menuBeneficiarios.executar();
             case 4 -> menuDistribuicoes.executar();
+            case 5 -> menuRelatorios.executar();
             default -> throw new IllegalStateException("Opcao nao tratada: " + opcao);
         }
     }
