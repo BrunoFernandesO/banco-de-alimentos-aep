@@ -22,6 +22,14 @@ DELETE FROM alimentos     WHERE id > 0;
 DELETE FROM beneficiarios WHERE id > 0;
 DELETE FROM doadores      WHERE id > 0;
 
+-- O DELETE nao reinicia a numeracao automatica. Sem isto, os IDs dos proximos
+-- cadastros dependeriam do historico do banco; com isto, apos cada carga o
+-- proximo doador e o 6, o proximo alimento o 12, e assim por diante.
+ALTER TABLE distribuicoes AUTO_INCREMENT = 1;
+ALTER TABLE alimentos     AUTO_INCREMENT = 1;
+ALTER TABLE beneficiarios AUTO_INCREMENT = 1;
+ALTER TABLE doadores      AUTO_INCREMENT = 1;
+
 INSERT INTO doadores (id, nome, tipo, contato) VALUES
     (1, 'Supermercado Modelo',               'MERCADO',       '(44) 3000-0001'),
     (2, 'Joao Carlos Pereira',               'PESSOA_FISICA', 'joao.pereira@exemplo.com'),
