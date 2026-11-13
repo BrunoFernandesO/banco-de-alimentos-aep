@@ -44,10 +44,10 @@ Alinhado aos Objetivos de Desenvolvimento Sustentável da ONU:
 | Sprint | Situação | Entregue |
 |---|---|---|
 | Sprint 1 · Modelagem e Base | Concluída | DER; `schema.sql` reexecutável; `dados_exemplo.sql`; conexão JDBC (Singleton) configurada por `db.properties`; verificação das tabelas na inicialização; build Maven. |
-| Sprint 2 · Cadastros Base | Pendente | — |
-| Sprint 3 · Núcleo Polimórfico | Pendente | — |
-| Sprint 4 · Beneficiários e Distribuição | Pendente | — |
-| Sprint 5 · Alertas, Relatórios e Entrega | Pendente | — |
+| Sprint 2 · Cadastros Base | Concluída (reconstruída, ver [Incidente](#incidente-e-recuperação-09112026)) | `TipoDoador`, `Doador` (composição 1:N com `Alimento`), hierarquia `Alimento` → `AlimentoPerecivel` / `AlimentoNaoPerecivel` com validações; `DoadorDAO`, `AlimentoDAO`; menus de cadastro de doador (RF01) e entrada de alimento (RF02). |
+| Sprint 3 · Núcleo Polimórfico | Concluída (reconstruída) | `calcularPrioridade()` abstrato e sobrescrito em cada subclasse; estoque ordenado por prioridade (RF03); CRUD completo de `Alimento` (consulta, alteração e exclusão protegida). |
+| Sprint 4 · Beneficiários e Distribuição | Concluída (reconstruída) | `Beneficiario`, `Distribuicao`, DAOs; cadastro de beneficiário (RF04); distribuição com baixa de estoque em transação única (RF05); histórico de entregas. |
+| Sprint 5 · Alertas, Relatórios e Entrega | Concluída | Alerta de vencimento na inicialização (RF06); relatório de desperdício com totais (RF07); menu integrado; README. |
 
 ## Arquitetura
 
@@ -140,7 +140,7 @@ sh ./mvnw -q compile exec:java               # Linux/macOS
 
 Também é possível abrir a pasta como **projeto Maven** em qualquer IDE (IntelliJ IDEA, Eclipse, NetBeans, VS Code) e executar a classe `br.unicesumar.bancoalimentos.Main`.
 
-**Saída esperada** (estado atual, Sprint 1):
+**Saída esperada** ao iniciar com os dados de exemplo (as datas acompanham o dia da execução):
 
 ```
 ==================================================
@@ -149,10 +149,41 @@ Também é possível abrir a pasta como **projeto Maven** em qualquer IDE (Intel
 ==================================================
 Conectado: MySQL 8.x.x (banco banco_alimentos)
 Tabelas verificadas: doadores, alimentos, beneficiarios, distribuicoes.
-Base pronta. O menu principal sera disponibilizado nas proximas sprints.
+
+*** ALERTA DE VENCIMENTO: 2 alimento(s) perecivel(is) vence(m) nos proximos 3 dias. Priorize a distribuicao. ***
+  ID  Alimento                          Saldo  Validade    Situacao              Doador
+---------------------------------------------------------------------------------------------------------
+   2  Pao frances (kg)                   8,50  dd/mm/aaaa  vence em 1 dia(s)     Padaria Pao Dourado
+   1  Leite integral 1L                 12,00  dd/mm/aaaa  vence em 2 dia(s)     Supermercado Modelo
+
+===== MENU PRINCIPAL =====
+ 1 - Doadores
+ 2 - Alimentos e estoque
+ 3 - Beneficiarios
+ 4 - Distribuicoes
+ 5 - Alertas e relatorios
+ 0 - Sair
+Opcao:
 ```
 
 Se algo estiver errado (MySQL parado, senha incorreta, banco não criado, `db.properties` ausente), o sistema exibe uma mensagem `ERRO:` indicando exatamente o que corrigir.
+
+## Uso
+
+Cada área do menu principal abre um submenu; a opção `0` volta ao menu anterior e, no menu principal, encerra o sistema (fechando a conexão com o banco). Entradas inválidas (texto no lugar de número, data inexistente, quantidade negativa) são recusadas e a pergunta é repetida; regras violadas aparecem como `ATENCAO:` sem interromper o sistema. Datas são digitadas como `dd/mm/aaaa` e quantidades aceitam vírgula ou ponto.
+
+| Requisito | Caminho no menu |
+|---|---|
+| RF01 — cadastrar doador | 1 Doadores → 1 |
+| RF02 — registrar entrada de alimento | 2 Alimentos e estoque → 1 |
+| RF03 — estoque por prioridade | 2 Alimentos e estoque → 3 |
+| CRUD de Alimento (listar, consultar, alterar, excluir) | 2 Alimentos e estoque → 2, 4, 5, 6 |
+| RF04 — cadastrar beneficiário | 3 Beneficiarios → 1 |
+| RF05 — registrar distribuição | 4 Distribuicoes → 1 (histórico: → 2) |
+| RF06 — alertas de vencimento | Automático ao iniciar; também 5 Alertas e relatorios → 1 |
+| RF07 — relatório de desperdício | 5 Alertas e relatorios → 2 |
+
+Com `dados_exemplo.sql` carregado, todos os requisitos podem ser demonstrados: há perecíveis vencendo em 1 e 2 dias (RF06), itens vencidos com saldo, um deles parcialmente distribuído (RF07), e alimentos com distribuições, cuja exclusão é recusada.
 
 ## Licença
 
